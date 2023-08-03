@@ -1,5 +1,3 @@
-import { useRef } from "react";
-
 import { getOnlyKey } from "../utils";
 
 const defaultCanvas = {
@@ -15,7 +13,7 @@ const defaultCanvas = {
     boxSizing: "content-box",
   },
   // 组件
-  // cmps: [],
+  cmps: [],
 
   // 仅用于测试
   cmps: [
@@ -37,9 +35,11 @@ const defaultCanvas = {
 };
 
 // 状态
-class Canvas {
+export default class Canvas {
   constructor(_canvas = defaultCanvas) {
     this.canvas = _canvas; // 页面数据
+
+    this.listeners = [];
   }
 
   // get
@@ -57,28 +57,36 @@ class Canvas {
     Object.assign(this.canvas, _canvas);
   };
 
+  addCmp = (_cmp) => {
+    const cmp = { key: getOnlyKey(), ..._cmp };
+    // 更新画布数据
+    this.canvas.cmps.push(cmp); // 将小组件添加到组件数组中，准备渲染到画布上
+    // 更新组件
+    this.updateApp();
+  };
+
+  updateApp = () => {
+    // 组件更新
+    this.listeners.forEach((lis) => lis());
+  };
+
+  subscribe = (listener) => {
+    // 订阅事件
+    this.listeners.push(listener);
+    // 返回一个取消订阅的函数
+    return () => {
+      this.listeners = this.listeners.filter((lis) => lis !== listener);
+    };
+  };
+
   getPublicCanvas = () => {
     const obj = {
       getCanvas: this.getCanvas,
       getCanvasCmps: this.getCanvasCmps,
+      addCmp: this.addCmp,
+      subscribe: this.subscribe,
     };
 
     return obj;
   };
-}
-
-// 保证画布的唯一性
-export function useCanvas(canvas) {
-  const canvasRef = useRef();
-
-  if (!canvasRef.current) {
-    if (canvas) {
-      canvasRef.current = canvas;
-    } else {
-      const canvas = new Canvas();
-      canvasRef.current = canvas.getPublicCanvas();
-    }
-  }
-
-  return canvasRef.current;
 }
